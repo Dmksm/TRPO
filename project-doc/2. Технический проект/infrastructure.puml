@@ -1,6 +1,21 @@
 @startuml
 !include <C4/C4_Container>
 
+' Настройка стилей
+skinparam linetype ortho
+skinparam arrow {
+    Color #2688d4
+    Thickness 1.5
+}
+skinparam rectangle {
+    BorderColor #2688d4
+    BorderThickness 2
+}
+skinparam package {
+    BorderColor #2688d4
+    BorderThickness 2
+}
+
 title C4 Infrastructure Diagram - Краудфандинговая платформа
 
 package "AWS Cloud" as cloud {
@@ -70,33 +85,33 @@ System_Ext(cdn_provider, "CDN Provider", "Amazon CloudFront")
 System_Ext(monitoring, "Monitoring", "Amazon CloudWatch")
 
 ' Соединения с балансировщиком
-Rel(cloudfront, alb, "Проксирование запросов", "HTTPS")
-Rel(alb, k8s_cluster, "Маршрутизация запросов", "HTTPS")
+Rel_D(cloudfront, alb, "Проксирование запросов", "HTTPS")
+Rel_D(alb, k8s_cluster, "Маршрутизация запросов", "HTTPS")
 
 ' Соединения с базами данных
-Rel(k8s_cluster, db_master, "Запись", "JDBC")
-Rel(k8s_cluster, db_replica1, "Чтение", "JDBC")
-Rel(k8s_cluster, db_replica2, "Чтение", "JDBC")
+Rel_R(k8s_cluster, db_master, "Запись", "JDBC")
+Rel_R(k8s_cluster, db_replica1, "Чтение", "JDBC")
+Rel_R(k8s_cluster, db_replica2, "Чтение", "JDBC")
 
 ' Репликация баз данных
-Rel(db_master, db_replica1, "Репликация", "Streaming")
-Rel(db_master, db_replica2, "Репликация", "Streaming")
-Rel(db_master, db_master_secondary, "Асинхронная репликация", "Streaming")
-Rel(db_master_secondary, db_replica_secondary, "Репликация", "Streaming")
+Rel_D(db_master, db_replica1, "Репликация", "Streaming")
+Rel_D(db_master, db_replica2, "Репликация", "Streaming")
+Rel_R(db_master, db_master_secondary, "Асинхронная репликация", "Streaming")
+Rel_D(db_master_secondary, db_replica_secondary, "Репликация", "Streaming")
 
 ' Соединения с кэшем и очередями
-Rel(k8s_cluster, redis_cluster, "Кэширование", "Redis Protocol")
-Rel(k8s_cluster, kafka_cluster, "Обмен событиями", "Kafka Protocol")
-Rel(k8s_cluster, elasticsearch_cluster, "Поиск", "HTTP")
+Rel_L(k8s_cluster, redis_cluster, "Кэширование", "Redis Protocol")
+Rel_L(k8s_cluster, kafka_cluster, "Обмен событиями", "Kafka Protocol")
+Rel_L(k8s_cluster, elasticsearch_cluster, "Поиск", "HTTP")
 
 ' Соединения с хранилищем
-Rel(media_service, s3_media, "Хранение файлов", "S3 API")
-Rel(k8s_cluster, s3_backup, "Резервное копирование", "S3 API")
+Rel_U(media_service, s3_media, "Хранение файлов", "S3 API")
+Rel_U(k8s_cluster, s3_backup, "Резервное копирование", "S3 API")
 
 ' Соединения с внешними сервисами
-Rel(payment_service, payment_gateway, "Обработка платежей", "HTTPS")
-Rel(notification_service, email_service, "Отправка email", "SMTP")
-Rel(cloudfront, cdn_provider, "Раздача контента", "HTTPS")
-Rel(k8s_cluster, monitoring, "Метрики", "CloudWatch API")
+Rel_R(payment_service, payment_gateway, "Обработка платежей", "HTTPS")
+Rel_R(notification_service, email_service, "Отправка email", "SMTP")
+Rel_U(cloudfront, cdn_provider, "Раздача контента", "HTTPS")
+Rel_L(k8s_cluster, monitoring, "Метрики", "CloudWatch API")
 
 @enduml
