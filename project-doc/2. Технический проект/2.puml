@@ -1,59 +1,96 @@
 @startuml
 !include <C4/C4_Container>
 
+' Настройки для улучшения внешнего вида
+skinparam linetype ortho
+skinparam ranksep 100
+skinparam nodesep 80
+
+' Принудительная вертикальная ориентация
+top to bottom direction
+
 title "C4. Контейнеры краудфандинговой платформы"
 
-Person(creator, "Автор проекта", "Создает и управляет проектами, публикует обновления")
-Person(backer, "Спонсор", "Просматривает проекты, делает взносы")
-Person(admin, "Администратор", "Управляет платформой и мониторит активность")
-
-System_Boundary(crowdfunding_platform, "Краудфандинговая платформа") {
-    Container(web_app, "Web-приложение", "React, TypeScript", "Пользовательский интерфейс платформы")
-    Container(mobile_app, "Мобильное приложение", "React Native", "Мобильный интерфейс платформы")
-
-    System_Boundary(services, "Микросервисы") {
-        Container(api_gateway, "API Gateway", "Kotlin, Spring Cloud Gateway", "Маршрутизация и аутентификация")
-        Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация")
-        Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами")
-        Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей")
-        Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Управление уведомлениями")
-        Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты")
-        Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск и фильтрация")
-        Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-контентом")
-    }
-
-    Container(kafka, "Message Broker", "Kafka", "Обмен событиями между сервисами")
-    ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных")
-    ContainerDb(analytics_db, "Analytics Database", "PostgreSQL", "Хранилище аналитических данных")
-    Container(cache, "Cache", "Redis", "Кэширование данных")
+' Пользователи системы (верхний уровень)
+together {
+    Person_Ext(creator, "Автор проекта", "Создает и управляет проектами, публикует обновления")
+    Person_Ext(backer, "Спонсор", "Просматривает проекты, делает взносы")
+    Person_Ext(admin, "Администратор", "Управляет платформой и мониторит активность")
 }
 
-System_Ext(payment_system, "Платёжная система", "Внешний платежный сервис")
-System_Ext(email_service, "Email Service", "Сервис отправки email")
-System_Ext(storage_service, "Cloud Storage", "Облачное хранилище файлов")
-System_Ext(social_media, "Social Media API", "API социальных сетей")
+System_Boundary(crowdfunding_platform, "Краудфандинговая платформа") {
+    ' Клиентские приложения (второй уровень)
+    together {
+        Container(web_app, "Web-приложение", "React, TypeScript", "Пользовательский интерфейс платформы")
+        Container(mobile_app, "Мобильное приложение", "React Native", "Мобильный интерфейс платформы")
+    }
 
-' Отношения с внешними пользователями
-Rel(creator, web_app, "Использует", "HTTPS")
-Rel(creator, mobile_app, "Использует", "HTTPS")
-Rel(backer, web_app, "Использует", "HTTPS")
-Rel(backer, mobile_app, "Использует", "HTTPS")
-Rel(admin, web_app, "Использует", "HTTPS")
+    ' Микросервисы (третий уровень)
+    System_Boundary(services, "Микросервисы") {
+        ' Первый ряд сервисов
+        together {
+            Container(api_gateway, "API Gateway", "Kotlin, Spring Cloud Gateway", "Маршрутизация и аутентификация")
+            Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация")
+            Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами")
+        }
+        
+        ' Второй ряд сервисов
+        together {
+            Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей")
+            Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Управление уведомлениями")
+            Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты")
+        }
+        
+        ' Третий ряд сервисов
+        together {
+            Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск и фильтрация")
+            Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-контентом")
+            Container(chat_service, "Chat Service", "Kotlin, Spring Boot", "Чат для общения между пользователями")
+        }
+    }
 
-' Отношения между приложениями и сервисами
-Rel(web_app, api_gateway, "Отправляет запросы", "HTTPS")
-Rel(mobile_app, api_gateway, "Отправляет запросы", "HTTPS")
+    ' Инфраструктурные сервисы (нижний уровень)
+    together {
+        Container(kafka, "Message Broker", "Kafka", "Обмен событиями между сервисами")
+        ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных")
+        ContainerDb(cache, "Cache", "Redis", "Кэширование данных")
+    }
+}
 
-' Отношения между сервисами и базами данных
-Rel(services, main_db, "Читает/Пишет данные", "JDBC")
-Rel(analytics_service, analytics_db, "Читает/Пишет данные", "JDBC")
-Rel(services, cache, "Кэширует данные", "Redis Protocol")
-Rel(services, kafka, "Публикует/Получает события")
+' Внешние системы (справа)
+together {
+    System_Ext(payment_system, "Платёжная система", "Внешний платежный сервис")
+    System_Ext(email_service, "Email Service", "Сервис отправки email")
+    System_Ext(storage_service, "Cloud Storage", "Облачное хранилище файлов")
+    System_Ext(social_media, "Social Media API", "API социальных сетей")
+    System_Ext(websocket_service, "WebSocket Service", "Сервис реального времени")
+}
 
-' Отношения с внешними системами
-Rel(payment_service, payment_system, "Обрабатывает платежи", "HTTPS")
-Rel(notification_service, email_service, "Отправляет email", "SMTP")
-Rel(media_service, storage_service, "Хранит файлы", "HTTPS")
-Rel(project_service, social_media, "Публикует обновления", "HTTPS")
+' Связи с пользователями
+Rel_D(creator, web_app, "Использует", "HTTPS")
+Rel_D(creator, mobile_app, "Использует", "HTTPS")
+Rel_D(backer, web_app, "Использует", "HTTPS")
+Rel_D(backer, mobile_app, "Использует", "HTTPS")
+Rel_D(admin, web_app, "Использует", "HTTPS")
+
+' Связи с API Gateway
+Rel_D(web_app, api_gateway, "Отправляет запросы", "HTTPS")
+Rel_D(mobile_app, api_gateway, "Отправляет запросы", "HTTPS")
+
+' Связи с чат-сервисом
+Rel_D(web_app, chat_service, "Подключается", "WebSocket")
+Rel_D(mobile_app, chat_service, "Подключается", "WebSocket")
+
+' Связи с базами данных и брокером
+Rel_D(services, main_db, "Читает/Пишет данные", "JDBC")
+Rel_D(services, cache, "Кэширует данные", "Redis Protocol")
+Rel_D(services, kafka, "Публикует/Получает события")
+
+' Связи с внешними системами
+Rel_D(payment_service, payment_system, "Обрабатывает платежи", "HTTPS")
+Rel_D(notification_service, email_service, "Отправляет email", "SMTP")
+Rel_D(media_service, storage_service, "Хранит файлы", "HTTPS")
+Rel_D(project_service, social_media, "Публикует обновления", "HTTPS")
+Rel_D(chat_service, websocket_service, "Обменивается сообщениями", "WebSocket")
 
 @enduml
