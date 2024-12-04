@@ -1,11 +1,5 @@
 @startuml
-!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
-!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
-!include $ICONURL/devicons/react.puml
-!include $ICONURL/devicons/kotlin.puml
-!include $ICONURL/devicons/postgresql.puml
-!include $ICONURL/devicons/redis.puml
-!includeurl C4P/C4_Container.puml
+!include <C4/C4_Container>
 
 title "C4. Контейнеры краудфандинговой платформы"
 
@@ -14,24 +8,24 @@ Person(backer, "Спонсор", "Просматривает проекты, д�
 Person(admin, "Администратор", "Управляет платформой и мониторит активность")
 
 System_Boundary(crowdfunding_platform, "Краудфандинговая платформа") {
-    Container(web_app, "Web-приложение", "React, TypeScript", "Пользовательский интерфейс платформы", $sprite="react")
-    Container(mobile_app, "Мобильное приложение", "React Native", "Мобильный интерфейс платформы", $sprite="react")
+    Container(web_app, "Web-приложение", "React, TypeScript", "Пользовательский интерфейс платформы")
+    Container(mobile_app, "Мобильное приложение", "React Native", "Мобильный интерфейс платформы")
 
     System_Boundary(services, "Микросервисы") {
-        Container(api_gateway, "API Gateway", "Kotlin, Spring Cloud Gateway", "Маршрутизация и аутентификация", $sprite="kotlin")
-        Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация", $sprite="kotlin")
-        Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами", $sprite="kotlin")
-        Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей", $sprite="kotlin")
-        Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Управление уведомлениями", $sprite="kotlin")
-        Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты", $sprite="kotlin")
-        Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск и фильтрация", $sprite="kotlin")
-        Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-контентом", $sprite="kotlin")
+        Container(api_gateway, "API Gateway", "Kotlin, Spring Cloud Gateway", "Маршрутизация и аутентификация")
+        Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация")
+        Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами")
+        Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей")
+        Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Управление уведомлениями")
+        Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты")
+        Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск и фильтрация")
+        Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-контентом")
     }
 
     Container(kafka, "Message Broker", "Kafka", "Обмен событиями между сервисами")
-    ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных", $sprite="postgresql")
-    ContainerDb(analytics_db, "Analytics Database", "PostgreSQL", "Хранилище аналитических данных", $sprite="postgresql")
-    Container(cache, "Cache", "Redis", "Кэширование данных", $sprite="redis")
+    ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных")
+    ContainerDb(analytics_db, "Analytics Database", "PostgreSQL", "Хранилище аналитических данных")
+    Container(cache, "Cache", "Redis", "Кэширование данных")
 }
 
 System_Ext(payment_system, "Платёжная система", "Внешний платежный сервис")
