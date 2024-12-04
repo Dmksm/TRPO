@@ -1,20 +1,25 @@
 @startuml
-title "C4. Компоненты краудфандинговой платформы"
-
 !include <C4/C4_Component>
 
-' Стили для компонентов
-skinparam component {
-    BackgroundColor #fff
-    BorderColor #000
-    FontSize 14
-}
+' Настройки для улучшения внешнего вида
+skinparam linetype ortho
+skinparam ranksep 100
+skinparam nodesep 80
 
-System_Boundary(crowdfunding_platform, "Краудфандинговая платформа") {
+' Принудительная вертикальная ориентация
+top to bottom direction
+
+title "C4. Компоненты ядра краудфандинговой платформы"
+
+System_Boundary(core_services, "Ядро платформы") {
     ' API Gateway
-    Component(gateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация и аутентификация запросов")
-    
-    ' Auth Service Components
+    Container_Boundary(gateway_service, "API Gateway") {
+        Component(auth_middleware, "AuthMiddleware", "Spring Security", "Проверка и валидация JWT токенов")
+        Component(rate_limiter, "RateLimiter", "Spring Cloud Gateway", "Ограничение количества запросов")
+        Component(route_handler, "RouteHandler", "Spring Cloud Gateway", "Маршрутизация запросов")
+    }
+
+    ' Auth Service
     Container_Boundary(auth_service, "Auth Service") {
         Component(auth_controller, "AuthController", "REST API", "Аутентификация и авторизация")
         Component(user_controller, "UserController", "REST API", "Управление пользователями")
@@ -24,7 +29,7 @@ System_Boundary(crowdfunding_platform, "Краудфандинговая пла�
         Component(user_repository, "UserRepository", "Repository", "Доступ к данным пользователей")
     }
 
-    ' Project Service Components
+    ' Project Service
     Container_Boundary(project_service, "Project Service") {
         Component(project_controller, "ProjectController", "REST API", "Управление проектами")
         Component(category_controller, "CategoryController", "REST API", "Управление категориями")
@@ -34,7 +39,7 @@ System_Boundary(crowdfunding_platform, "Краудфандинговая пла�
         Component(category_repository, "CategoryRepository", "Repository", "Доступ к данным категорий")
     }
 
-    ' Payment Service Components
+    ' Payment Service
     Container_Boundary(payment_service, "Payment Service") {
         Component(payment_controller, "PaymentController", "REST API", "Обработка платежей")
         Component(transaction_controller, "TransactionController", "REST API", "Управление транзакциями")
@@ -43,83 +48,50 @@ System_Boundary(crowdfunding_platform, "Краудфандинговая пла�
         Component(payment_repository, "PaymentRepository", "Repository", "Доступ к данным платежей")
         Component(payment_gateway_client, "PaymentGatewayClient", "Client", "Интеграция с платежной системой")
     }
-
-    ' Notification Service Components
-    Container_Boundary(notification_service, "Notification Service") {
-        Component(notification_controller, "NotificationController", "REST API", "Управление уведомлениями")
-        Component(notification_service_impl, "NotificationService", "Service", "Отправка уведомлений")
-        Component(email_service, "EmailService", "Service", "Отправка email")
-        Component(notification_repository, "NotificationRepository", "Repository", "История уведомлений")
-    }
-
-    ' Analytics Service Components
-    Container_Boundary(analytics_service, "Analytics Service") {
-        Component(analytics_controller, "AnalyticsController", "REST API", "Аналитика и отчеты")
-        Component(report_controller, "ReportController", "REST API", "Генерация отчетов")
-        Component(analytics_service_impl, "AnalyticsService", "Service", "Анализ данных")
-        Component(report_service_impl, "ReportService", "Service", "Формирование отчетов")
-        Component(analytics_repository, "AnalyticsRepository", "Repository", "Аналитические данные")
-    }
-
-    ' Media Service Components
-    Container_Boundary(media_service, "Media Service") {
-        Component(media_controller, "MediaController", "REST API", "Управление медиа-файлами")
-        Component(media_service_impl, "MediaService", "Service", "Обработка файлов")
-        Component(storage_client, "StorageClient", "Client", "Интеграция с хранилищем")
-    }
-
-    ' Search Service Components
-    Container_Boundary(search_service, "Search Service") {
-        Component(search_controller, "SearchController", "REST API", "Поиск по проектам")
-        Component(search_service_impl, "SearchService", "Service", "Поисковая логика")
-        Component(elastic_client, "ElasticClient", "Client", "Интеграция с ElasticSearch")
-    }
 }
 
 ' Внешние системы
 System_Ext(payment_gateway, "Payment Gateway", "Внешняя платежная система")
-System_Ext(email_provider, "Email Provider", "Сервис отправки email")
-System_Ext(storage_provider, "Storage Provider", "Облачное хранилище")
-System_Ext(elastic_search, "ElasticSearch", "Поисковый движок")
-System_Ext(social_media, "Social Media", "Социальные сети")
-
-' Базы данных
-ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище")
-ContainerDb(analytics_db, "Analytics Database", "PostgreSQL", "Аналитическое хранилище")
-ContainerDb(cache, "Cache", "Redis", "Кэширование")
-
-' Брокер сообщений
+ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных")
+ContainerDb(cache, "Cache", "Redis", "Кэширование данных")
 Container(kafka, "Message Broker", "Kafka", "Обмен событиями")
 
-' Связи между компонентами
-Rel(gateway, auth_controller, "Запросы авторизации")
-Rel(gateway, project_controller, "Запросы проектов")
-Rel(gateway, payment_controller, "Запросы платежей")
-Rel(gateway, notification_controller, "Запросы уведомлений")
-Rel(gateway, analytics_controller, "Запросы аналитики")
-Rel(gateway, media_controller, "Запросы медиа")
-Rel(gateway, search_controller, "Поисковые запросы")
+' Связи между компонентами API Gateway
+Rel_D(auth_middleware, route_handler, "Передает запрос после проверки")
+Rel_D(rate_limiter, route_handler, "Передает запрос после проверки лимитов")
 
-' Связи с внешними системами
-Rel(payment_gateway_client, payment_gateway, "HTTPS")
-Rel(email_service, email_provider, "SMTP")
-Rel(storage_client, storage_provider, "HTTPS")
-Rel(elastic_client, elastic_search, "HTTPS")
-Rel(project_service_impl, social_media, "HTTPS")
+' Связи Auth Service
+Rel_D(auth_controller, auth_service_impl, "Использует")
+Rel_D(user_controller, user_service_impl, "Использует")
+Rel_D(auth_service_impl, jwt_service, "Использует")
+Rel_D(auth_service_impl, user_repository, "Использует")
+Rel_D(user_service_impl, user_repository, "Использует")
+
+' Связи Project Service
+Rel_D(project_controller, project_service_impl, "Использует")
+Rel_D(category_controller, category_service_impl, "Использует")
+Rel_D(project_service_impl, project_repository, "Использует")
+Rel_D(category_service_impl, category_repository, "Использует")
+
+' Связи Payment Service
+Rel_D(payment_controller, payment_service_impl, "Использует")
+Rel_D(transaction_controller, transaction_service_impl, "Использует")
+Rel_D(payment_service_impl, payment_repository, "Использует")
+Rel_D(transaction_service_impl, payment_repository, "Использует")
+Rel_R(payment_gateway_client, payment_gateway, "Отправляет запросы")
 
 ' Связи с базами данных
-Rel_Back(user_repository, main_db, "JDBC")
-Rel_Back(project_repository, main_db, "JDBC")
-Rel_Back(payment_repository, main_db, "JDBC")
-Rel_Back(analytics_repository, analytics_db, "JDBC")
+Rel_D(user_repository, main_db, "Читает/Пишет")
+Rel_D(project_repository, main_db, "Читает/Пишет")
+Rel_D(category_repository, main_db, "Читает/Пишет")
+Rel_D(payment_repository, main_db, "Читает/Пишет")
 
 ' Связи с кэшем
-Rel(auth_service_impl, cache, "Redis")
-Rel(project_service_impl, cache, "Redis")
+Rel_R(auth_service_impl, cache, "Кэширует токены")
+Rel_R(project_service_impl, cache, "Кэширует проекты")
 
 ' Связи с Kafka
-Rel(payment_service_impl, kafka, "События платежей")
-Rel(project_service_impl, kafka, "События проектов")
-Rel(notification_service_impl, kafka, "События уведомлений")
+Rel_L(payment_service_impl, kafka, "Публикует события платежей")
+Rel_L(project_service_impl, kafka, "Публикует события проектов")
 
 @enduml
