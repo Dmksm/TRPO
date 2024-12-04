@@ -2,116 +2,119 @@
 !include <C4/C4_Container>
 
 ' Настройка стилей
-skinparam linetype ortho
+skinparam linetype polyline
+skinparam nodesep 60
+skinparam ranksep 60
+skinparam padding 5
+skinparam defaultTextAlignment center
+skinparam maxMessageSize 50
+
+' Уменьшаем размер шрифта
+skinparam defaultFontSize 12
+skinparam arrowFontSize 10
+
 skinparam arrow {
     Color #2688d4
-    Thickness 1.5
+    Thickness 1
 }
 skinparam rectangle {
     BorderColor #2688d4
-    BorderThickness 2
+    BorderThickness 1
 }
 skinparam package {
     BorderColor #2688d4
-    BorderThickness 2
+    BorderThickness 1
+    Padding 10
 }
 
-title C4 Infrastructure Diagram - Краудфандинговая платформа
+' Настройка направления диаграммы
+left to right direction
+
+title Инфраструктура краудфандинговой платформы
+
+' Внешние системы
+package "External" as external {
+    System_Ext(cdn, "CDN", "")
+    System_Ext(stripe, "Stripe", "")
+    System_Ext(ses, "SES", "")
+    System_Ext(cw, "CloudWatch", "")
+}
 
 package "AWS Cloud" as cloud {
-    Container(cloudfront, "CloudFront", "CDN", "Распределение статического контента")
-    Container(alb, "Application Load Balancer", "AWS ALB", "Балансировщик нагрузки")
+    package "Frontend" as frontend {
+        Container(cf, "CloudFront", "")
+        Container(alb, "ALB", "")
+    }
 
-    package "EKS Cluster" as k8s_cluster {
-        package "Gateway Pod" as gateway_pod {
-            Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация и аутентификация")
+    package "Infrastructure" as infra {
+        Container(kafka, "Kafka", "")
+        Container(es, "OpenSearch", "")
+        Container(redis, "Redis", "")
+    }
+
+    package "EKS" as k8s {
+        package "Frontend Services" as fs {
+            Container(gw, "API Gateway", "")
+            Container(auth, "Auth", "")
+            Container(proj, "Projects", "")
+            Container(pay, "Payments", "")
         }
-
-        package "Auth Pod" as auth_pod {
-            Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация")
-        }
-
-        package "Project Pod" as project_pod {
-            Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами")
-        }
-
-        package "Payment Pod" as payment_pod {
-            Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей")
-        }
-
-        package "Notification Pod" as notification_pod {
-            Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Отправка уведомлений")
-        }
-
-        package "Analytics Pod" as analytics_pod {
-            Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты")
-        }
-
-        package "Media Pod" as media_pod {
-            Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-файлами")
-        }
-
-        package "Search Pod" as search_pod {
-            Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск по проектам")
+        
+        package "Backend Services" as bs {
+            Container(notif, "Notifications", "")
+            Container(anl, "Analytics", "")
+            Container(media, "Media", "")
+            Container(search, "Search", "")
         }
     }
 
-    Container(kafka_cluster, "MSK", "Amazon Managed Streaming for Kafka", "Обмен событиями между сервисами")
-    Container(elasticsearch_cluster, "OpenSearch", "Amazon OpenSearch", "Поисковый движок")
-    Container(redis_cluster, "ElastiCache", "Amazon ElastiCache for Redis", "Распределенное кэширование")
-}
-
-package "Database Cluster" as database {
-    package "Primary Region" as region_primary {
-        Container(db_master, "RDS Master", "Amazon RDS PostgreSQL", "Основная база данных")
-        Container(db_replica1, "RDS Replica 1", "Amazon RDS PostgreSQL", "Реплика для чтения")
-        Container(db_replica2, "RDS Replica 2", "Amazon RDS PostgreSQL", "Реплика для чтения")
-    }
-
-    package "Secondary Region" as region_secondary {
-        Container(db_master_secondary, "RDS Master", "Amazon RDS PostgreSQL", "Резервная база данных")
-        Container(db_replica_secondary, "RDS Replica", "Amazon RDS PostgreSQL", "Реплика для чтения")
+    package "Storage" as storage {
+        Container(s3m, "Media", "")
+        Container(s3b, "Backup", "")
     }
 }
 
-package "Storage" as storage {
-    Container(s3_media, "S3 Media Bucket", "Amazon S3", "Хранение медиа-файлов")
-    Container(s3_backup, "S3 Backup Bucket", "Amazon S3", "Резервные копии")
+package "Database" as db {
+    package "Primary" as primary {
+        Container(master, "Master", "")
+        Container(r1, "Replica 1", "")
+        Container(r2, "Replica 2", "")
+    }
+
+    package "Secondary" as secondary {
+        Container(dr, "DR Master", "")
+        Container(drr, "DR Replica", "")
+    }
 }
 
-System_Ext(payment_gateway, "Payment Gateway", "Stripe API")
-System_Ext(email_service, "Email Service", "Amazon SES")
-System_Ext(cdn_provider, "CDN Provider", "Amazon CloudFront")
-System_Ext(monitoring, "Monitoring", "Amazon CloudWatch")
+' Связи с внешними сервисами
+Rel(cf, cdn, "CDN")
+Rel(pay, stripe, "API")
+Rel(notif, ses, "SMTP")
+Rel(k8s, cw, "Logs")
 
-' Соединения с балансировщиком
-Rel_D(cloudfront, alb, "Проксирование запросов", "HTTPS")
-Rel_D(alb, k8s_cluster, "Маршрутизация запросов", "HTTPS")
+' Связи фронтенда
+Rel_D(cf, alb, "HTTP")
+Rel_D(alb, gw, "HTTP")
 
-' Соединения с базами данных
-Rel_R(k8s_cluster, db_master, "Запись", "JDBC")
-Rel_R(k8s_cluster, db_replica1, "Чтение", "JDBC")
-Rel_R(k8s_cluster, db_replica2, "Чтение", "JDBC")
+' Связи с инфраструктурой
+Rel(fs, redis, "Cache")
+Rel(bs, kafka, "Events")
+Rel(search, es, "Search")
 
-' Репликация баз данных
-Rel_D(db_master, db_replica1, "Репликация", "Streaming")
-Rel_D(db_master, db_replica2, "Репликация", "Streaming")
-Rel_R(db_master, db_master_secondary, "Асинхронная репликация", "Streaming")
-Rel_D(db_master_secondary, db_replica_secondary, "Репликация", "Streaming")
+' Связи с хранилищем
+Rel(media, s3m, "Files")
+Rel(bs, s3b, "Backup")
 
-' Соединения с кэшем и очередями
-Rel_L(k8s_cluster, redis_cluster, "Кэширование", "Redis Protocol")
-Rel_L(k8s_cluster, kafka_cluster, "Обмен событиями", "Kafka Protocol")
-Rel_L(k8s_cluster, elasticsearch_cluster, "Поиск", "HTTP")
+' Связи с БД
+Rel(fs, master, "Write")
+Rel(fs, r1, "Read")
+Rel(bs, r2, "Read")
 
-' Соединения с хранилищем
-Rel_U(media_service, s3_media, "Хранение файлов", "S3 API")
-Rel_U(k8s_cluster, s3_backup, "Резервное копирование", "S3 API")
-
-' Соединения с внешними сервисами
-Rel_R(payment_service, payment_gateway, "Обработка платежей", "HTTPS")
-Rel_R(notification_service, email_service, "Отправка email", "SMTP")
-Rel_U(cloudfront, cdn_provider, "Раздача контента", "HTTPS")
-Rel_L(k8s_cluster, monitoring, "Метрики", "CloudWatch API")
+' Репликация
+Rel_R(master, r1, "Repl")
+Rel_R(master, r2, "Repl")
+Rel_R(master, dr, "Repl")
+Rel_D(dr, drr, "Repl")
 
 @enduml
