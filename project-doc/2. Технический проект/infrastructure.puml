@@ -3,11 +3,11 @@
 
 title C4 Infrastructure Diagram - Краудфандинговая платформа
 
-package "Яндекс.Облако" as cloud {
-    Container(cdn, "CDN", "Yandex CDN", "Распределение статического контента")
-    Container(alb, "Application Load Balancer", "Yandex ALB", "Балансировщик нагрузки")
+package "AWS Cloud" as cloud {
+    Container(cloudfront, "CloudFront", "CDN", "Распределение статического контента")
+    Container(alb, "Application Load Balancer", "AWS ALB", "Балансировщик нагрузки")
 
-    package "Managed Kubernetes" as k8s_cluster {
+    package "EKS Cluster" as k8s_cluster {
         package "Gateway Pod" as gateway_pod {
             Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация и аутентификация")
         }
@@ -41,36 +41,36 @@ package "Яндекс.Облако" as cloud {
         }
     }
 
-    Container(kafka_cluster, "Managed Kafka", "Yandex Managed Kafka", "Обмен событиями между сервисами")
-    Container(elasticsearch_cluster, "Managed Elasticsearch", "Yandex Managed Elasticsearch", "Поисковый движок")
-    Container(redis_cluster, "Managed Redis", "Yandex Managed Redis", "Распределенное кэширование")
+    Container(kafka_cluster, "MSK", "Amazon Managed Streaming for Kafka", "Обмен событиями между сервисами")
+    Container(elasticsearch_cluster, "OpenSearch", "Amazon OpenSearch", "Поисковый движок")
+    Container(redis_cluster, "ElastiCache", "Amazon ElastiCache for Redis", "Распределенное кэширование")
 }
 
 package "Database Cluster" as database {
     package "Primary Region" as region_primary {
-        Container(db_master, "PostgreSQL Master", "Yandex Managed PostgreSQL", "Основная база данных")
-        Container(db_replica1, "PostgreSQL Replica 1", "Yandex Managed PostgreSQL", "Реплика для чтения")
-        Container(db_replica2, "PostgreSQL Replica 2", "Yandex Managed PostgreSQL", "Реплика для чтения")
+        Container(db_master, "RDS Master", "Amazon RDS PostgreSQL", "Основная база данных")
+        Container(db_replica1, "RDS Replica 1", "Amazon RDS PostgreSQL", "Реплика для чтения")
+        Container(db_replica2, "RDS Replica 2", "Amazon RDS PostgreSQL", "Реплика для чтения")
     }
 
     package "Secondary Region" as region_secondary {
-        Container(db_master_secondary, "PostgreSQL Master", "Yandex Managed PostgreSQL", "Резервная база данных")
-        Container(db_replica_secondary, "PostgreSQL Replica", "Yandex Managed PostgreSQL", "Реплика для чтения")
+        Container(db_master_secondary, "RDS Master", "Amazon RDS PostgreSQL", "Резервная база данных")
+        Container(db_replica_secondary, "RDS Replica", "Amazon RDS PostgreSQL", "Реплика для чтения")
     }
 }
 
 package "Storage" as storage {
-    Container(object_storage, "Object Storage", "Yandex Object Storage", "Хранение медиа-файлов")
-    Container(backup_storage, "Backup Storage", "Yandex Object Storage", "Резервные копии")
+    Container(s3_media, "S3 Media Bucket", "Amazon S3", "Хранение медиа-файлов")
+    Container(s3_backup, "S3 Backup Bucket", "Amazon S3", "Резервные копии")
 }
 
-System_Ext(payment_gateway, "Payment Gateway", "ЮKassa API")
-System_Ext(email_service, "Email Service", "Yandex Mail for Business")
-System_Ext(cdn_provider, "CDN Provider", "Yandex CDN")
-System_Ext(monitoring, "Monitoring", "Yandex Monitoring")
+System_Ext(payment_gateway, "Payment Gateway", "Stripe API")
+System_Ext(email_service, "Email Service", "Amazon SES")
+System_Ext(cdn_provider, "CDN Provider", "Amazon CloudFront")
+System_Ext(monitoring, "Monitoring", "Amazon CloudWatch")
 
 ' Соединения с балансировщиком
-Rel(cdn, alb, "Проксирование запросов", "HTTPS")
+Rel(cloudfront, alb, "Проксирование запросов", "HTTPS")
 Rel(alb, k8s_cluster, "Маршрутизация запросов", "HTTPS")
 
 ' Соединения с базами данных
@@ -90,13 +90,13 @@ Rel(k8s_cluster, kafka_cluster, "Обмен событиями", "Kafka Protocol
 Rel(k8s_cluster, elasticsearch_cluster, "Поиск", "HTTP")
 
 ' Соединения с хранилищем
-Rel(media_service, object_storage, "Хранение файлов", "S3 API")
-Rel(k8s_cluster, backup_storage, "Резервное копирование", "S3 API")
+Rel(media_service, s3_media, "Хранение файлов", "S3 API")
+Rel(k8s_cluster, s3_backup, "Резервное копирование", "S3 API")
 
 ' Соединения с внешними сервисами
 Rel(payment_service, payment_gateway, "Обработка платежей", "HTTPS")
 Rel(notification_service, email_service, "Отправка email", "SMTP")
-Rel(cdn, cdn_provider, "Раздача контента", "HTTPS")
-Rel(k8s_cluster, monitoring, "Метрики", "Prometheus Protocol")
+Rel(cloudfront, cdn_provider, "Раздача контента", "HTTPS")
+Rel(k8s_cluster, monitoring, "Метрики", "CloudWatch API")
 
 @enduml

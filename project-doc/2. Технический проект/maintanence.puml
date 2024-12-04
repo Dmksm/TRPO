@@ -1,7 +1,7 @@
 @startuml
 !theme vibrant
 
-package "Yandex Managed Kubernetes" as k8s {
+package "AWS EKS Kubernetes" as k8s {
   [Docker] as docker << (C, #FFAAAA) >>
   [Containers] as containers << (C, #FFAAAA) >>
 }
@@ -10,17 +10,17 @@ package "Краудфандинговая платформа - обслужив�
     actor "DevOps инженер" as devops_engineer
     actor "SRE инженер" as sre_engineer
     
-    package "Яндекс.Облако" as cloud {
-      [Yandex Monitoring] as monitoring_service << (C, #FFAAAA) >>
-      [Yandex Backup] as backup_service << (C, #FFAAAA) >>
-      [Yandex Logging] as logging << (C, #FFAAAA) >>
-      [Yandex Tracing] as tracing << (C, #FFAAAA) >>
+    package "AWS Cloud" as cloud {
+      [CloudWatch + Grafana] as monitoring_service << (C, #FFAAAA) >>
+      [AWS Backup] as backup_service << (C, #FFAAAA) >>
+      [CloudWatch Logs] as cloudwatch << (C, #FFAAAA) >>
+      [AWS X-Ray] as xray << (C, #FFAAAA) >>
     }
 }
 
 package "Внешние сервисы" as outer_services {
     package "Каналы уведомлений" as notifications {
-        [Yandex Message Queue] as message_queue << (C, #FFAAAA) >>
+        [AWS SNS] as sns_service << (C, #FFAAAA) >>
         [PagerDuty] as pagerduty << (C, #FFAAAA) >>
         [Slack] as slack << (C, #FFAAAA) >>
     }
@@ -44,20 +44,20 @@ package "Разработка и развертывание" as development {
       [Deploy to Dev] as deploy_dev << (C, #FFAAAA) >>
     }
     
-    [Yandex Container Registry] as container_registry << (C, #FFAAAA) >>
+    [Amazon ECR] as container_registry << (C, #FFAAAA) >>
 }
 
 ' Связи DevOps и SRE
 devops_engineer --> monitoring_service : "Мониторинг системы"
 devops_engineer --> backup_service : "Управление резервными копиями"
-sre_engineer --> logging : "Анализ логов"
-sre_engineer --> tracing : "Трейсинг запросов"
+sre_engineer --> cloudwatch : "Анализ логов"
+sre_engineer --> xray : "Трейсинг запросов"
 
 ' Связи мониторинга
-monitoring_service --> message_queue : "Отправка алертов"
-logging --> message_queue : "Отправка уведомлений"
-message_queue --> pagerduty : "Эскалация инцидентов"
-message_queue --> slack : "Командные уведомления"
+monitoring_service --> sns_service : "Отправка алертов"
+cloudwatch --> sns_service : "Отправка уведомлений"
+sns_service --> pagerduty : "Эскалация инцидентов"
+sns_service --> slack : "Командные уведомления"
 
 ' Связи разработки
 developer --> vcs : "Push изменений"
@@ -82,8 +82,8 @@ docker --> containers : "Развертывание контейнеров"
 
 ' Мониторинг контейнеров
 monitoring_service --> containers : "Сбор метрик"
-logging --> containers : "Сбор логов"
-tracing --> containers : "Трейсинг"
+cloudwatch --> containers : "Сбор логов"
+xray --> containers : "Трейсинг"
 backup_service --> containers : "Резервное копирование"
 
 @enduml
