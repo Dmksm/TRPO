@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Context>
+
+title "C4. Контекст краудфандинговой платформы"
+
+Person(creator, "Автор проекта", "Создает и управляет проектами, публикует обновления, взаимодействует со спонсорами")
+Person(backer, "Спонсор", "Просматривает проекты, делает взносы, получает обновления и вознаграждения")
+Person(admin, "Администратор", "Модерирует проекты и контент, управляет пользователями, анализирует метрики платформы")
+
+System(crowdfundingSystem, "Краудфандинговая платформа", "Позволяет авторам создавать проекты и получать финансирование от спонсоров")
+
+System_Ext(paymentSystem, "Платёжная система", "Обработка платежей и возвратов средств")
+System_Ext(emailService, "Email сервис", "Отправка уведомлений и обновлений")
+System_Ext(socialMedia, "Социальные сети", "Интеграция для продвижения проектов")
+System_Ext(analyticsService, "Аналитический сервис", "Сбор и анализ метрик")
+System_Ext(storageService, "Облачное хранилище", "Хранение медиа-контента проектов")
+
+Rel(creator, crowdfundingSystem, "Создает и управляет проектами")
+Rel(backer, crowdfundingSystem, "Просматривает проекты и делает взносы")
+Rel(admin, crowdfundingSystem, "Управляет платформой")
+
+Rel(crowdfundingSystem, paymentSystem, "Обрабатывает платежи")
+Rel(crowdfundingSystem, emailService, "Отправляет уведомления")
+Rel(crowdfundingSystem, socialMedia, "Публикует обновления")
+Rel(crowdfundingSystem, analyticsService, "Отправляет метрики")
+Rel(crowdfundingSystem, storageService, "Хранит файлы")
+
+SHOW_LEGEND()
+@enduml

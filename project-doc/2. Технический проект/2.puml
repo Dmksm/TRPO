@@ -1,0 +1,65 @@
+@startuml
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!include $ICONURL/devicons/react.puml
+!include $ICONURL/devicons/kotlin.puml
+!include $ICONURL/devicons/postgresql.puml
+!include $ICONURL/devicons/redis.puml
+!includeurl C4P/C4_Container.puml
+
+title "C4. Контейнеры краудфандинговой платформы"
+
+Person(creator, "Автор проекта", "Создает и управляет проектами, публикует обновления")
+Person(backer, "Спонсор", "Просматривает проекты, делает взносы")
+Person(admin, "Администратор", "Управляет платформой и мониторит активность")
+
+System_Boundary(crowdfunding_platform, "Краудфандинговая платформа") {
+    Container(web_app, "Web-приложение", "React, TypeScript", "Пользовательский интерфейс платформы", $sprite="react")
+    Container(mobile_app, "Мобильное приложение", "React Native", "Мобильный интерфейс платформы", $sprite="react")
+
+    System_Boundary(services, "Микросервисы") {
+        Container(api_gateway, "API Gateway", "Kotlin, Spring Cloud Gateway", "Маршрутизация и аутентификация", $sprite="kotlin")
+        Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация", $sprite="kotlin")
+        Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами", $sprite="kotlin")
+        Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей", $sprite="kotlin")
+        Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Управление уведомлениями", $sprite="kotlin")
+        Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты", $sprite="kotlin")
+        Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск и фильтрация", $sprite="kotlin")
+        Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-контентом", $sprite="kotlin")
+    }
+
+    Container(kafka, "Message Broker", "Kafka", "Обмен событиями между сервисами")
+    ContainerDb(main_db, "Main Database", "PostgreSQL", "Основное хранилище данных", $sprite="postgresql")
+    ContainerDb(analytics_db, "Analytics Database", "PostgreSQL", "Хранилище аналитических данных", $sprite="postgresql")
+    Container(cache, "Cache", "Redis", "Кэширование данных", $sprite="redis")
+}
+
+System_Ext(payment_system, "Платёжная система", "Внешний платежный сервис")
+System_Ext(email_service, "Email Service", "Сервис отправки email")
+System_Ext(storage_service, "Cloud Storage", "Облачное хранилище файлов")
+System_Ext(social_media, "Social Media API", "API социальных сетей")
+
+' Отношения с внешними пользователями
+Rel(creator, web_app, "Использует", "HTTPS")
+Rel(creator, mobile_app, "Использует", "HTTPS")
+Rel(backer, web_app, "Использует", "HTTPS")
+Rel(backer, mobile_app, "Использует", "HTTPS")
+Rel(admin, web_app, "Использует", "HTTPS")
+
+' Отношения между приложениями и сервисами
+Rel(web_app, api_gateway, "Отправляет запросы", "HTTPS")
+Rel(mobile_app, api_gateway, "Отправляет запросы", "HTTPS")
+
+' Отношения между сервисами и базами данных
+Rel(services, main_db, "Читает/Пишет данные", "JDBC")
+Rel(analytics_service, analytics_db, "Читает/Пишет данные", "JDBC")
+Rel(services, cache, "Кэширует данные", "Redis Protocol")
+Rel(services, kafka, "Публикует/Получает события")
+
+' Отношения с внешними системами
+Rel(payment_service, payment_system, "Обрабатывает платежи", "HTTPS")
+Rel(notification_service, email_service, "Отправляет email", "SMTP")
+Rel(media_service, storage_service, "Хранит файлы", "HTTPS")
+Rel(project_service, social_media, "Публикует обновления", "HTTPS")
+
+@enduml

@@ -1,0 +1,89 @@
+@startuml
+!theme vibrant
+
+package "Yandex Managed Kubernetes" as k8s {
+  [Docker] as docker << (C, #FFAAAA) >>
+  [Containers] as containers << (C, #FFAAAA) >>
+}
+
+package "Краудфандинговая платформа - обслуживание" as maintenance {
+    actor "DevOps инженер" as devops_engineer
+    actor "SRE инженер" as sre_engineer
+    
+    package "Яндекс.Облако" as cloud {
+      [Yandex Monitoring] as monitoring_service << (C, #FFAAAA) >>
+      [Yandex Backup] as backup_service << (C, #FFAAAA) >>
+      [Yandex Logging] as logging << (C, #FFAAAA) >>
+      [Yandex Tracing] as tracing << (C, #FFAAAA) >>
+    }
+}
+
+package "Внешние сервисы" as outer_services {
+    package "Каналы уведомлений" as notifications {
+        [Yandex Message Queue] as message_queue << (C, #FFAAAA) >>
+        [PagerDuty] as pagerduty << (C, #FFAAAA) >>
+        [Slack] as slack << (C, #FFAAAA) >>
+    }
+}
+
+package "Разработка и развертывание" as development {
+    actor "Разработчик" as developer
+    [GitHub] as vcs << (C, #FFAAAA) >>
+    [GitHub Actions (main)] as cicd_prod << (C, #FFAAAA) >>
+    [GitHub Actions (develop)] as cicd_dev << (C, #FFAAAA) >>
+    
+    package "CI/CD Pipeline (PROD)" as build_prod {
+      [Build & Test] as build_test_prod << (C, #FFAAAA) >>
+      [Security Scan] as security_scan_prod << (C, #FFAAAA) >>
+      [Deploy to Prod] as deploy_prod << (C, #FFAAAA) >>
+    }
+    
+    package "CI/CD Pipeline (DEV)" as build_dev {
+      [Build & Test] as build_test_dev << (C, #FFAAAA) >>
+      [Security Scan] as security_scan_dev << (C, #FFAAAA) >>
+      [Deploy to Dev] as deploy_dev << (C, #FFAAAA) >>
+    }
+    
+    [Yandex Container Registry] as container_registry << (C, #FFAAAA) >>
+}
+
+' Связи DevOps и SRE
+devops_engineer --> monitoring_service : "Мониторинг системы"
+devops_engineer --> backup_service : "Управление резервными копиями"
+sre_engineer --> logging : "Анализ логов"
+sre_engineer --> tracing : "Трейсинг запросов"
+
+' Связи мониторинга
+monitoring_service --> message_queue : "Отправка алертов"
+logging --> message_queue : "Отправка уведомлений"
+message_queue --> pagerduty : "Эскалация инцидентов"
+message_queue --> slack : "Командные уведомления"
+
+' Связи разработки
+developer --> vcs : "Push изменений"
+vcs --> cicd_prod : "Триггер CI/CD (main)"
+vcs --> cicd_dev : "Триггер CI/CD (develop)"
+
+' Pipeline PROD
+cicd_prod --> build_test_prod : "Запуск пайплайна"
+build_test_prod --> security_scan_prod : "Проверка безопасности"
+security_scan_prod --> deploy_prod : "Развертывание"
+deploy_prod --> container_registry : "Push образов"
+
+' Pipeline DEV
+cicd_dev --> build_test_dev : "Запуск пайплайна"
+build_test_dev --> security_scan_dev : "Проверка безопасности"
+security_scan_dev --> deploy_dev : "Развертывание"
+deploy_dev --> container_registry : "Push образов"
+
+' Связи с Kubernetes
+container_registry --> docker : "Pull образов"
+docker --> containers : "Развертывание контейнеров"
+
+' Мониторинг контейнеров
+monitoring_service --> containers : "Сбор метрик"
+logging --> containers : "Сбор логов"
+tracing --> containers : "Трейсинг"
+backup_service --> containers : "Резервное копирование"
+
+@enduml

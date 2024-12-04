@@ -1,0 +1,56 @@
+@startuml
+top to bottom direction
+hide empty description
+skinparam nodesep 65
+
+[*] --> Draft : Создание проекта
+
+state Draft {
+  [*] --> ContentEditing : Заполнение информации
+  ContentEditing --> MediaUploading : Добавление медиа
+  MediaUploading --> GoalSetting : Загрузка завершена
+  GoalSetting --> ReviewReady : Установка целей
+  ReviewReady --> [*] : Отправка на проверку
+}
+
+Draft --> Review : Подача на модерацию
+
+state Review {
+  [*] --> ContentCheck : Проверка контента
+  ContentCheck --> LegalCheck : Контент одобрен
+  LegalCheck --> FinalCheck : Юридическая проверка
+  ContentCheck --> Rejected : Нарушение правил
+  LegalCheck --> Rejected : Правовые проблемы
+  FinalCheck --> [*] : Финальное одобрение
+  FinalCheck --> Rejected : Отказ
+  Rejected --> [*] : Уведомление автора
+}
+
+Review --> Active : Проект одобрен
+Review --> Rejected : Проект отклонен
+Rejected --> Draft : Доработка
+
+state Active {
+  [*] --> Funding : Начало сбора
+  Funding --> Extended : Продление срока
+  Extended --> Funding : Продолжение сбора
+  Funding --> GoalReached : Цель достигнута
+  Funding --> GoalFailed : Срок истёк
+}
+
+Active --> Suspended : Нарушение правил
+Suspended --> Active : Устранение нарушений
+Suspended --> Canceled : Серьезные нарушения
+
+state GoalReached {
+  [*] --> RewardsFulfillment : Начало выдачи наград
+  RewardsFulfillment --> UpdatesPosting : Отправка наград
+  UpdatesPosting --> [*] : Завершение проекта
+}
+
+GoalReached --> Completed : Все обязательства выполнены
+GoalFailed --> Canceled : Возврат средств
+Canceled --> [*]
+Completed --> [*]
+
+@enduml

@@ -1,0 +1,102 @@
+@startuml
+!include <C4/C4_Container>
+
+title C4 Infrastructure Diagram - Краудфандинговая платформа
+
+package "Яндекс.Облако" as cloud {
+    Container(cdn, "CDN", "Yandex CDN", "Распределение статического контента")
+    Container(alb, "Application Load Balancer", "Yandex ALB", "Балансировщик нагрузки")
+
+    package "Managed Kubernetes" as k8s_cluster {
+        package "Gateway Pod" as gateway_pod {
+            Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Маршрутизация и аутентификация")
+        }
+
+        package "Auth Pod" as auth_pod {
+            Container(auth_service, "Auth Service", "Kotlin, Spring Boot", "Авторизация и аутентификация")
+        }
+
+        package "Project Pod" as project_pod {
+            Container(project_service, "Project Service", "Kotlin, Spring Boot", "Управление проектами")
+        }
+
+        package "Payment Pod" as payment_pod {
+            Container(payment_service, "Payment Service", "Kotlin, Spring Boot", "Обработка платежей")
+        }
+
+        package "Notification Pod" as notification_pod {
+            Container(notification_service, "Notification Service", "Kotlin, Spring Boot", "Отправка уведомлений")
+        }
+
+        package "Analytics Pod" as analytics_pod {
+            Container(analytics_service, "Analytics Service", "Kotlin, Spring Boot", "Аналитика и отчеты")
+        }
+
+        package "Media Pod" as media_pod {
+            Container(media_service, "Media Service", "Kotlin, Spring Boot", "Управление медиа-файлами")
+        }
+
+        package "Search Pod" as search_pod {
+            Container(search_service, "Search Service", "Kotlin, Spring Boot", "Поиск по проектам")
+        }
+    }
+
+    Container(kafka_cluster, "Managed Kafka", "Yandex Managed Kafka", "Обмен событиями между сервисами")
+    Container(elasticsearch_cluster, "Managed Elasticsearch", "Yandex Managed Elasticsearch", "Поисковый движок")
+    Container(redis_cluster, "Managed Redis", "Yandex Managed Redis", "Распределенное кэширование")
+}
+
+package "Database Cluster" as database {
+    package "Primary Region" as region_primary {
+        Container(db_master, "PostgreSQL Master", "Yandex Managed PostgreSQL", "Основная база данных")
+        Container(db_replica1, "PostgreSQL Replica 1", "Yandex Managed PostgreSQL", "Реплика для чтения")
+        Container(db_replica2, "PostgreSQL Replica 2", "Yandex Managed PostgreSQL", "Реплика для чтения")
+    }
+
+    package "Secondary Region" as region_secondary {
+        Container(db_master_secondary, "PostgreSQL Master", "Yandex Managed PostgreSQL", "Резервная база данных")
+        Container(db_replica_secondary, "PostgreSQL Replica", "Yandex Managed PostgreSQL", "Реплика для чтения")
+    }
+}
+
+package "Storage" as storage {
+    Container(object_storage, "Object Storage", "Yandex Object Storage", "Хранение медиа-файлов")
+    Container(backup_storage, "Backup Storage", "Yandex Object Storage", "Резервные копии")
+}
+
+System_Ext(payment_gateway, "Payment Gateway", "ЮKassa API")
+System_Ext(email_service, "Email Service", "Yandex Mail for Business")
+System_Ext(cdn_provider, "CDN Provider", "Yandex CDN")
+System_Ext(monitoring, "Monitoring", "Yandex Monitoring")
+
+' Соединения с балансировщиком
+Rel(cdn, alb, "Проксирование запросов", "HTTPS")
+Rel(alb, k8s_cluster, "Маршрутизация запросов", "HTTPS")
+
+' Соединения с базами данных
+Rel(k8s_cluster, db_master, "Запись", "JDBC")
+Rel(k8s_cluster, db_replica1, "Чтение", "JDBC")
+Rel(k8s_cluster, db_replica2, "Чтение", "JDBC")
+
+' Репликация баз данных
+Rel(db_master, db_replica1, "Репликация", "Streaming")
+Rel(db_master, db_replica2, "Репликация", "Streaming")
+Rel(db_master, db_master_secondary, "Асинхронная репликация", "Streaming")
+Rel(db_master_secondary, db_replica_secondary, "Репликация", "Streaming")
+
+' Соединения с кэшем и очередями
+Rel(k8s_cluster, redis_cluster, "Кэширование", "Redis Protocol")
+Rel(k8s_cluster, kafka_cluster, "Обмен событиями", "Kafka Protocol")
+Rel(k8s_cluster, elasticsearch_cluster, "Поиск", "HTTP")
+
+' Соединения с хранилищем
+Rel(media_service, object_storage, "Хранение файлов", "S3 API")
+Rel(k8s_cluster, backup_storage, "Резервное копирование", "S3 API")
+
+' Соединения с внешними сервисами
+Rel(payment_service, payment_gateway, "Обработка платежей", "HTTPS")
+Rel(notification_service, email_service, "Отправка email", "SMTP")
+Rel(cdn, cdn_provider, "Раздача контента", "HTTPS")
+Rel(k8s_cluster, monitoring, "Метрики", "Prometheus Protocol")
+
+@enduml
